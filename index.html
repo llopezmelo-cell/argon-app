@@ -339,6 +339,7 @@ mark{background:rgba(75,191,214,0.15);color:var(--petrol);border-radius:2px;padd
     </div>
     <div class="header-right">
       <div class="data-chip" id="data-chip">— clientes</div>
+      <button class="btn-update" id="btn-install" style="display:none;background:#16a34a">⬇ Instalar app</button>
       <button class="btn-update" id="btn-update">↻ Actualizar</button>
       <button class="btn-logout" id="btn-logout" title="Salir">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -887,6 +888,30 @@ showBioButton();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
+
+// ── INSTALACIÓN PWA ──
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'inline-flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'none';
+  _installPrompt = null;
+  toast('✓ App instalada en tu pantalla de inicio', 4000);
+});
+document.getElementById('btn-install').addEventListener('click', async () => {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  const { outcome } = await _installPrompt.userChoice;
+  if (outcome === 'accepted') {
+    document.getElementById('btn-install').style.display = 'none';
+    _installPrompt = null;
+  }
+});
 </script>
 </body>
 </html>
