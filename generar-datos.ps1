@@ -83,7 +83,7 @@ foreach ($carpeta in $carpetas) {
         $cobertura = "General"
         for ($pi = 0; $pi -lt ($partes.Count - 1); $pi++) {
             $parte = $partes[$pi]
-            if ($parte -match "^\d{4}$") { break }   # llegamos al año, parar
+            if ($parte -match "^\d{4}$" -and [int]$parte -ge 2015 -and [int]$parte -le 2030) { break }   # llegamos al año, parar
             if ($parte -match "(?i)^(documentos|siniestro[s]?|fc|cotizaciones|siniestro\s)") { break }
             $cobertura = $parte   # usar nivel más profundo encontrado
         }
