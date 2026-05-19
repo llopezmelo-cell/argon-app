@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1A5C78">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ARGon Admin">
+<title>ARGon — Panel Interno</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --petrol:#1A5C78;--petrol2:#0D3A50;--petrol3:#1e6880;
+  --cyan:#4BBFD6;--cyan2:#3AAFC6;
+  --bg:#FFFFFF;--bg2:#F4F7FB;--bg3:#EBF5F9;
+  --text:#2A3A48;--muted:#6A7E8C;--border:#E0EBF2;
+  --green:#22c55e;--red:#ef4444;
+  --radius:10px;
+  --shadow:0 4px 24px rgba(13,34,51,0.08);
+  --shadow-h:0 8px 40px rgba(13,34,51,0.14);
+  --tr:0.3s ease;
+  --font-head:'Montserrat',sans-serif;
+  --font-body:'Open Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;overflow-x:hidden}
+
+/* ===== PANTALLAS ===== */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* ===== FONDO LOGIN ===== */
+.hero-bg{
+  background:linear-gradient(175deg,#F4F7FB 0%,#EBF5F9 40%,#C8E8F5 70%,#A8D8EE 100%);
+  position:relative;overflow:hidden;
+}
+.hero-bg::before{
+  content:'';position:absolute;top:-20%;right:-10%;width:60%;height:80%;
+  background:radial-gradient(circle,rgba(75,191,214,0.2) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-bg::after{
+  content:'';position:absolute;bottom:-20%;left:-10%;width:50%;height:60%;
+  background:radial-gradient(circle,rgba(26,92,120,0.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+/* ===== AUTH ===== */
+.auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1}
+.auth-card{
+  background:#FFFFFF;border:1px solid var(--border);
+  border-radius:16px;padding:40px 36px;width:100%;max-width:420px;
+  box-shadow:0 8px 40px rgba(13,34,51,0.12);
+}
+.argon-logo-wrap{text-align:center;margin-bottom:28px}
+.argon-logo-wrap img{height:52px;width:auto}
+.auth-title{font-family:var(--font-head);font-size:18px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:0.3px;color:var(--petrol)}
+.auth-subtitle{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px}
+
+/* ===== FORM ===== */
+.field{margin-bottom:16px}
+.field label{display:block;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.field input{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--text);padding:12px 14px;border-radius:var(--radius);font-size:16px;
+  font-family:var(--font-body);outline:none;transition:border-color var(--tr);-webkit-appearance:none;
+}
+.field input:focus{border-color:var(--cyan);background:#fff}
+.field input::placeholder{color:var(--muted)}
+
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.shake{animation:shake 0.35s ease}
+
+.btn-primary{
+  width:100%;padding:13px;
+  background:linear-gradient(90deg,var(--petrol),#2A8099);
+  color:#fff;border:none;border-radius:var(--radius);
+  font-family:var(--font-head);font-size:13px;font-weight:800;letter-spacing:1.5px;
+  text-transform:uppercase;cursor:pointer;transition:all var(--tr);
+  box-shadow:0 4px 20px rgba(26,92,120,0.25);margin-top:4px;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(26,92,120,0.35)}
+.btn-primary:active{transform:translateY(0)}
+
+.btn-bio{
+  width:100%;padding:14px;
+  background:var(--bg3);border:1px solid rgba(75,191,214,0.35);
+  color:var(--petrol);border-radius:var(--radius);
+  font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:0.5px;
+  cursor:pointer;transition:all var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;
+}
+.btn-bio:hover{border-color:var(--cyan);transform:translateY(-1px);box-shadow:var(--shadow)}
+
+.divider{display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--muted);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.field-error{font-size:12px;color:var(--red);margin-top:5px;display:none}
+.field-error.show{display:block}
+
+/* ===== HEADER ===== */
+#app-header{
+  background:#FFFFFF;
+  border-bottom:1px solid var(--border);
+  box-shadow:0 2px 12px rgba(13,34,51,0.06);
+  padding:0 24px;height:70px;
+  display:flex;align-items:center;gap:16px;
+  flex-shrink:0;position:sticky;top:0;z-index:100;
+}
+.header-logo{display:flex;align-items:center;gap:14px}
+.header-logo img{height:38px;width:auto}
+.header-divider{width:1px;height:28px;background:var(--border)}
+.header-section{font-family:var(--font-head);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.data-chip{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--muted);display:none}
+@media(min-width:500px){.data-chip{display:block}}
+.btn-update{
+  background:var(--petrol);border:none;color:#fff;
+  padding:8px 18px;border-radius:20px;cursor:pointer;
+  font-family:var(--font-head);font-size:11px;font-weight:700;letter-spacing:0.5px;
+  transition:all var(--tr);white-space:nowrap;
+  box-shadow:0 2px 10px rgba(26,92,120,0.3);
+}
+.btn-update:hover{background:var(--petrol2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(26,92,120,0.4)}
+.btn-update:disabled{opacity:0.6;cursor:wait}
+/* Botón flotante siempre visible */
+#fab-update{
+  position:fixed;bottom:24px;right:24px;z-index:500;
+  background:var(--petrol);color:#fff;border:none;
+  width:52px;height:52px;border-radius:50%;cursor:pointer;
+  font-size:20px;box-shadow:0 4px 20px rgba(26,92,120,0.4);
+  transition:all var(--tr);display:none;align-items:center;justify-content:center;
+}
+#fab-update:hover{background:var(--petrol2);transform:scale(1.1)}
+#fab-update.spinning{animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.btn-logout{background:none;border:none;color:var(--muted);cursor:pointer;padding:7px;border-radius:8px;transition:color var(--tr)}
+.btn-logout:hover{color:var(--red)}
+
+/* ===== APP BG ===== */
+#screen-app{background:var(--bg2)}
+
+/* ===== SEARCH HERO ===== */
+#search-section{padding:28px 20px 14px;max-width:720px;margin:0 auto;width:100%}
+.search-hero{
+  background:#FFFFFF;border:1px solid var(--border);border-radius:14px;
+  padding:28px 26px;margin-bottom:16px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.search-hero::before{
+  content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(75,191,214,0.1),transparent 70%);pointer-events:none;
+}
+.search-hero-title{font-family:var(--font-head);font-size:22px;font-weight:800;margin-bottom:6px;color:var(--petrol)}
+.search-hero-title span{
+  background:linear-gradient(90deg,var(--petrol),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.search-hero-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+
+.search-box{position:relative}
+#searchInput{
+  width:100%;background:var(--bg2);border:1.5px solid var(--border);
+  color:var(--text);padding:14px 16px 14px 48px;border-radius:var(--radius);
+  font-family:var(--font-body);font-size:17px;outline:none;transition:border-color var(--tr);-webkit-appearance:none;
+}
+#searchInput::placeholder{color:var(--muted)}
+#searchInput:focus{border-color:var(--cyan);background:#fff}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+#clearBtn{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:var(--border);border:none;color:var(--muted);
+  width:26px;height:26px;border-radius:50%;cursor:pointer;
+  display:none;align-items:center;justify-content:center;font-size:13px;
+}
+#clearBtn:hover{background:var(--bg3);color:var(--text)}
+#clearBtn.visible{display:flex}
+
+/* ===== STATS ===== */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.stat-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;flex:1;min-width:110px}
+.stat-box .num{font-family:var(--font-head);font-size:24px;font-weight:800;color:var(--petrol);line-height:1}
+.stat-box .lbl{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ===== BIO CARD ===== */
+.bio-card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);
+}
+.bio-card-icon{font-size:26px;flex-shrink:0}
+.bio-card-text{flex:1}
+.bio-card-text .title{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--petrol)}
+.bio-card-text .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.btn-activar{
+  background:var(--petrol);border:none;color:#fff;
+  padding:7px 16px;border-radius:8px;cursor:pointer;
+  font-family:var(--font-head);font-size:11px;font-weight:700;letter-spacing:0.5px;
+  transition:all var(--tr);white-space:nowrap;
+}
+.btn-activar:hover{background:var(--petrol3);transform:translateY(-1px)}
+
+/* ===== RESULTADOS ===== */
+#results-wrap{max-width:720px;margin:0 auto;padding:0 20px 40px;width:100%}
+.result-count{font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+
+/* ===== CLIENTE CARD ===== */
+.client-card{
+  background:#FFFFFF;border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:10px;overflow:hidden;
+  transition:border-color var(--tr),box-shadow var(--tr),transform 0.15s;
+  box-shadow:var(--shadow);
+}
+.client-card:hover{border-color:rgba(75,191,214,0.4);box-shadow:var(--shadow-h);transform:translateY(-1px)}
+.client-card.open{border-color:rgba(75,191,214,0.45)}
+.client-header{padding:16px 18px;display:flex;align-items:center;gap:13px;cursor:pointer}
+.client-avatar{
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,var(--bg3),var(--bg2));
+  border:2px solid rgba(75,191,214,0.3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-head);font-weight:800;font-size:15px;color:var(--petrol);flex-shrink:0;
+  box-shadow:0 2px 10px rgba(13,34,51,0.07);
+}
+.client-info{flex:1;min-width:0}
+.client-name{font-family:var(--font-head);font-size:15px;font-weight:700;letter-spacing:0.2px;color:var(--text)}
+.client-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px}
+.chevron{color:var(--muted);transition:transform var(--tr);flex-shrink:0}
+.client-card.open .chevron{transform:rotate(180deg)}
+.client-body{display:none;padding:4px 18px 18px;border-top:1px solid var(--border)}
+.client-card.open .client-body{display:block}
+
+/* ===== COBERTURAS ===== */
+.cobertura-block{margin-top:16px}
+.cob-title{font-family:var(--font-head);font-size:10px;font-weight:800;color:var(--petrol);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.cob-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.year-row{margin-bottom:8px}
+.year-tag{font-family:var(--font-head);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.4px;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.year-actions{display:flex;gap:4px;margin-left:4px}
+.year-tag.vigente{color:var(--green)}
+.year-tag.vigente::before{content:'●';font-size:7px}
+.year-actions{margin-left:auto;display:flex;gap:5px}
+.files-list{display:flex;flex-direction:column;gap:4px}
+
+/* ===== ARCHIVO ROW ===== */
+.file-row{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  transition:border-color var(--tr),background var(--tr);
+}
+.file-row:hover{border-color:rgba(75,191,214,0.35);background:var(--bg3)}
+.tipo-badge{font-family:var(--font-head);font-size:9px;font-weight:800;padding:3px 8px;border-radius:4px;flex-shrink:0;letter-spacing:0.5px;text-transform:uppercase}
+.tipo-badge.circ{background:rgba(26,92,120,0.1);color:var(--petrol);border:1px solid rgba(26,92,120,0.25)}
+.tipo-badge.merc{background:rgba(75,191,214,0.12);color:#0e7490;border:1px solid rgba(75,191,214,0.3)}
+.tipo-badge.cono{background:rgba(56,189,248,0.1);color:#0284c7;border:1px solid rgba(56,189,248,0.25)}
+.tipo-badge.poli{background:rgba(34,197,94,0.1);color:#16a34a;border:1px solid rgba(34,197,94,0.25)}
+.tipo-badge.otro{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+.file-name{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:100px;color:var(--text)}
+.file-actions{display:flex;gap:5px;flex-shrink:0}
+.file-btn{
+  background:#fff;border:1px solid var(--border);color:var(--petrol);
+  padding:4px 9px;border-radius:6px;cursor:pointer;
+  font-family:var(--font-head);font-size:10px;font-weight:700;letter-spacing:0.3px;
+  transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:3px;text-decoration:none;
+}
+.file-btn:hover{background:var(--petrol);border-color:var(--petrol);color:#fff}
+.file-btn.wa{color:#16a34a;border-color:rgba(37,211,102,0.3)}
+.file-btn.wa:hover{background:#25D366;border-color:#25D366;color:#fff}
+.file-btn.mail:hover{background:var(--petrol);border-color:var(--petrol);color:#fff}
+.file-btn-remote{opacity:0.45;cursor:default}
+.file-btn-remote:hover{background:#fff!important;border-color:var(--border)!important;color:var(--petrol)!important}
+
+/* ===== BADGES VIGENCIA ===== */
+.badge-vigente{background:rgba(34,197,94,0.1);color:#16a34a;border:1px solid rgba(34,197,94,0.2);font-family:var(--font-head);font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;letter-spacing:0.5px;text-transform:uppercase}
+.badge-vencido{background:rgba(239,68,68,0.07);color:var(--red);border:1px solid rgba(239,68,68,0.15);font-family:var(--font-head);font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;letter-spacing:0.5px;text-transform:uppercase}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .icon{font-size:48px;display:block;margin-bottom:12px;opacity:0.4}
+.empty-state p{font-family:var(--font-head);font-size:13px;font-weight:600;letter-spacing:0.3px}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#fff;border:1px solid var(--border);color:var(--text);
+  padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;
+  transition:transform var(--tr);white-space:nowrap;box-shadow:var(--shadow-h);
+}
+#toast.show{transform:translateX(-50%) translateY(0)}
+mark{background:rgba(75,191,214,0.15);color:var(--petrol);border-radius:2px;padding:0 2px}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="screen-login" class="screen hero-bg active">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="argon-logo-wrap">
+        <img id="logo-login" src="" alt="ARGon Broker" style="height:56px">
+      </div>
+      <h2 class="auth-title">Panel Interno</h2>
+      <p class="auth-subtitle">Acceso exclusivo — Argon Broker de Seguros</p>
+
+      <button id="btn-bio" class="btn-bio" style="display:none">
+        <span>🔐</span> Ingresar con huella / Face ID
+      </button>
+      <div id="bio-divider" class="divider" style="display:none">o</div>
+
+      <div class="field">
+        <label>Contraseña</label>
+        <div style="position:relative">
+          <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px">
+          <button id="btn-eye" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:1" title="Mostrar/ocultar">
+            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="field-error" id="pwd-error">Contraseña incorrecta</div>
+      </div>
+      <button class="btn-primary" id="btn-login">INGRESAR</button>
+      <p style="text-align:center;margin-top:14px">
+        <button id="btn-forgot" type="button" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--font-body)">¿Olvidaste la contraseña?</button>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="screen-app" class="screen">
+  <header id="app-header">
+    <div class="header-logo">
+      <img id="logo-header" src="" alt="ARGon">
+      <div class="header-divider"></div>
+      <span class="header-section">Panel Interno</span>
+    </div>
+    <div class="header-right">
+      <div class="data-chip" id="data-chip">— clientes</div>
+      <button class="btn-update" id="btn-update">↻ Actualizar</button>
+      <button class="btn-logout" id="btn-logout" title="Salir">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="search-section">
+    <div class="search-hero">
+      <h1 class="search-hero-title">Cartera de <span>Clientes</span></h1>
+      <p class="search-hero-sub">Buscá por nombre, cobertura o número de póliza</p>
+      <div class="search-box">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="search" id="searchInput" placeholder="Buscar cliente..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <button id="clearBtn">✕</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="num" id="stat-total">—</div><div class="lbl">Total clientes</div></div>
+        <div class="stat-box"><div class="num" id="stat-vigentes">—</div><div class="lbl">Con póliza vigente</div></div>
+        <div class="stat-box"><div class="num" id="stat-archivos">—</div><div class="lbl">Archivos indexados</div></div>
+      </div>
+    </div>
+
+    <div id="bio-setup-card" class="bio-card" style="display:none">
+      <div class="bio-card-icon">🔐</div>
+      <div class="bio-card-text">
+        <div class="title">Activar acceso biométrico</div>
+        <div class="sub">Ingresá más rápido con huella o Face ID</div>
+      </div>
+      <button class="btn-activar" id="btn-activar-bio">Activar</button>
+    </div>
+  </div>
+
+  <div id="results-wrap">
+    <div class="result-count" id="result-count"></div>
+    <div id="results-list"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<!-- Botón flotante de actualización (siempre visible) -->
+<button id="fab-update" title="Actualizar datos">↻</button>
+
+<script>
+// ── CONFIG ──
+const PWD      = 'argon2026';
+const RP_ID    = location.hostname || 'localhost';
+const RP_NAME  = 'ARGon Broker';
+const CRED_KEY = 'argon_cred_id';
+
+// ── ESTADO ──
+let clientes = [];
+let query    = '';
+
+// ── LOGO ──
+async function loadLogo() {
+  try {
+    const r   = await fetch('./logo_b64.txt');
+    const src = (await r.text()).trim();
+    document.getElementById('logo-login').src  = src;
+    document.getElementById('logo-header').src = src;
+  } catch(e) {}
+}
+
+// ── TOAST ──
+let toastTimer;
+function toast(msg, ms = 2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── PANTALLAS ──
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── ONLINE / OFFLINE ──
+function setOnlineStatus(online) {
+  const chip = document.getElementById('data-chip');
+  if (!online) {
+    chip.style.color = '#ef4444';
+    chip.title = 'Sin conexión — usando datos guardados';
+  } else {
+    chip.style.color = '';
+    chip.title = '';
+  }
+}
+window.addEventListener('online',  () => { setOnlineStatus(true);  loadData(); });
+window.addEventListener('offline', () => setOnlineStatus(false));
+
+// ── DATOS ──
+async function loadData() {
+  const btn = document.getElementById('btn-update');
+  btn.textContent = '↻ Cargando…';
+  btn.disabled = true;
+  try {
+    // cache:'no-store' fuerza al navegador a ir siempre a la red, ignorando cualquier caché
+    const r = await fetch('./datos.json?t=' + Date.now(), {
+      cache: 'no-store',
+      headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    clientes = d.clientes || [];
+    updateStats();
+    renderResults();
+    const ahora = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem('argon_last_sync', ahora);
+    document.getElementById('data-chip').textContent = clientes.length + ' clientes · ' + ahora;
+    setOnlineStatus(true);
+    toast('✓ ' + clientes.length + ' clientes actualizados');
+  } catch(e) {
+    const ultimo = localStorage.getItem('argon_last_sync');
+    document.getElementById('data-chip').textContent = ultimo ? 'Offline · ' + ultimo : 'Sin conexión';
+    setOnlineStatus(false);
+    toast('📴 Sin conexión — mostrando datos guardados', 4000);
+  }
+  btn.textContent = '↻ Actualizar';
+  btn.disabled = false;
+  const fab = document.getElementById('fab-update');
+  if (fab) { fab.textContent = '↻'; fab.classList.remove('spinning'); }
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent    = clientes.length;
+  document.getElementById('stat-vigentes').textContent = clientes.filter(c => c.vigente).length;
+  document.getElementById('stat-archivos').textContent = clientes.reduce((a,c) => a + (c.archivos||[]).length, 0);
+}
+
+// ── BÚSQUEDA ──
+function normalizar(s) {
+  return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
+function filtrar() {
+  if (!query) return clientes;
+  return clientes.filter(c => {
+    const n    = normalizar(c.nombre);
+    const arch = (c.archivos||[]).map(a => normalizar(a.nombre+' '+a.cobertura)).join(' ');
+    return n.includes(query) || arch.includes(query);
+  });
+}
+
+// ── RENDER ──
+function initials(nombre) {
+  return (nombre||'').split(' ').slice(0,2).map(w => w[0]||'').join('').toUpperCase();
+}
+
+function highlight(text, q) {
+  if (!q) return text;
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+  return text.replace(re, '<mark>$1</mark>');
+}
+
+const ANIOS_VALIDOS = ['2025','2026'];
+
+// Detecta el tipo real de un archivo por su nombre (maneja abreviaciones)
+function tipoReal(nombre) {
+  const n = normalizar(nombre);
+  if (n.includes('circulaci') || /\bcirc\b/.test(n))                       return 'circ';
+  if (n.includes('mercosur')  || /\bmerc\b/.test(n))                       return 'merc';
+  if (n.includes('conosur')   || /\bcono\b/.test(n))                       return 'cono';
+  if (n.includes('poliza')    || /\bpza\b/.test(n) || /\bchequera\b/.test(n) ||
+      /\bcertif?\b/.test(n))                                                return 'poli';
+  return 'otro';
+}
+
+function esVisible(nombre) { return tipoReal(nombre) !== 'otro'; }
+
+function tipoDesc(nombre) {
+  switch (tipoReal(nombre)) {
+    case 'circ': return 'Circulación';
+    case 'merc': return 'Mercosur';
+    case 'cono': return 'Conosur';
+    case 'poli': return 'Póliza';
+    default:     return nombre;
+  }
+}
+
+function badgeLabel(nombre) {
+  switch (tipoReal(nombre)) {
+    case 'circ': return 'CIRCULACIÓN';
+    case 'merc': return 'MERCOSUR';
+    case 'cono': return 'CONOSUR';
+    case 'poli': return 'PÓLIZA';
+    default:     return 'OTRO';
+  }
+}
+
+// Orden: circulación → mercosur → conosur → póliza
+function rankDoc(nombre) {
+  const t = tipoReal(nombre);
+  const idx = { circ:0, merc:1, cono:2, poli:3 };
+  return idx[t] !== undefined ? idx[t] : 4;
+}
+
+// Coberturas de auto primero
+function esAuto(archivos) {
+  return archivos.some(a => {
+    const t = tipoReal(a.nombre);
+    return t === 'circ' || t === 'merc' || t === 'cono';
+  });
+}
+
+function renderCard(c) {
+  // 1. Filtrar por tipo de documento
+  let archivos = (c.archivos || []).filter(a => esVisible(a.nombre));
+
+  // 2. Solo 2025 y 2026
+  archivos = archivos.filter(a => ANIOS_VALIDOS.includes(a.anio));
+
+  // 3. Por cobertura, quedarse con el año más reciente disponible
+  const maxAnio = {};
+  archivos.forEach(a => {
+    const cob = a.cobertura || 'General';
+    if (!maxAnio[cob] || a.anio > maxAnio[cob]) maxAnio[cob] = a.anio;
+  });
+  archivos = archivos.filter(a => a.anio === maxAnio[a.cobertura || 'General']);
+
+  const anioHoy  = String(new Date().getFullYear());
+
+  // Agrupar cobertura → año → archivos
+  const cobMap = {};
+  archivos.forEach(a => {
+    const cob  = a.cobertura || 'General';
+    const anio = a.anio || '—';
+    if (!cobMap[cob]) cobMap[cob] = {};
+    if (!cobMap[cob][anio]) cobMap[cob][anio] = [];
+    cobMap[cob][anio].push(a);
+  });
+
+  // Ordenar coberturas: autos primero, resto después (alfabético dentro de cada grupo)
+  const cobEntries = Object.entries(cobMap).sort(([, a], [, b]) => {
+    const aArchs = Object.values(a).flat();
+    const bArchs = Object.values(b).flat();
+    const aAuto = esAuto(aArchs) ? 0 : 1;
+    const bAuto = esAuto(bArchs) ? 0 : 1;
+    return aAuto - bAuto;
+  });
+
+  let cobHTML = '';
+  for (const [cob, anios] of cobEntries) {
+    let yearsHTML = '';
+    const sorted = Object.keys(anios).sort((a,b) => b.localeCompare(a));
+    for (const anio of sorted) {
+      const esVigente = anio === anioHoy || anio === String(+anioHoy + 1);
+      // Guardar datos de la cobertura para WA y mail
+      const cobKey = (c.id + '_' + cob + '_' + anio).replace(/[^a-zA-Z0-9_]/g, '_');
+      const archivosOrdenados = [...anios[anio]].sort((a,b) => rankDoc(a.nombre) - rankDoc(b.nombre));
+      _cobData[cobKey] = {
+        rutas:     archivosOrdenados.map(a => a.ruta),
+        nombres:   archivosOrdenados.map(a => a.nombre),
+        cliente:   c.nombre,
+        cobertura: cob
+      };
+
+      const rows = archivosOrdenados.map(a => {
+        const nombre = highlight(a.nombre, query);
+        const tr = tipoReal(a.nombre);
+        const bl = badgeLabel(a.nombre);
+        return `<div class="file-row">
+          <span class="tipo-badge ${tr}">${bl}</span>
+          <span class="file-name">${nombre}</span>
+          <div class="file-actions">
+            <button class="file-btn${isLocal() ? '' : ' file-btn-remote'}" onclick="verArchivo('${encodeURIComponent(a.ruta)}')" title="${isLocal() ? 'Ver archivo' : 'Disponible solo en la PC'}">📄 Ver</button>
+          </div>
+        </div>`;
+      }).join('');
+      yearsHTML += `<div class="year-row">
+        <div class="year-tag${esVigente?' vigente':''}">
+          <span>${anio}</span>
+          <span class="year-actions">
+            <button class="file-btn wa" onclick="compartirWACob('${cobKey}')">WA</button>
+            <button class="file-btn mail" onclick="compartirMailCob('${cobKey}')">✉ Mail</button>
+          </span>
+        </div>
+        <div class="files-list">${rows}</div>
+      </div>`;
+    }
+    cobHTML += `<div class="cobertura-block">
+      <div class="cob-title">${cob}</div>
+      ${yearsHTML}
+    </div>`;
+  }
+
+  const meta  = archivos.length === 0 ? 'Sin archivos' : archivos.length + ' archivo' + (archivos.length !== 1 ? 's' : '');
+  const badge = c.vigente
+    ? '<span class="badge-vigente">Vigente</span>'
+    : '<span class="badge-vencido">Vencido</span>';
+
+  return `<div class="client-card" data-id="${c.id}">
+    <div class="client-header" onclick="toggleCard(this.closest('.client-card'))">
+      <div class="client-avatar">${initials(c.nombre)}</div>
+      <div class="client-info">
+        <div class="client-name">${highlight(c.nombre, query)}</div>
+        <div class="client-meta">${meta}${badge}</div>
+      </div>
+      <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+    <div class="client-body">
+      ${cobHTML || '<p style="color:var(--muted);font-size:13px;padding-top:8px">Sin archivos registrados</p>'}
+    </div>
+  </div>`;
+}
+
+function renderResults() {
+  const filtered = filtrar();
+  const list  = document.getElementById('results-list');
+  const count = document.getElementById('result-count');
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <span class="icon">🔍</span>
+      <p>No se encontraron clientes${query ? ' para "'+query+'"' : ''}</p>
+    </div>`;
+    count.textContent = '';
+  } else {
+    count.textContent = filtered.length === clientes.length
+      ? filtered.length + ' clientes'
+      : filtered.length + ' resultado' + (filtered.length !== 1 ? 's' : '');
+    list.innerHTML = filtered.map(renderCard).join('');
+  }
+}
+
+function toggleCard(card) {
+  card.classList.toggle('open');
+}
+
+// ── BIOMÉTRICO (WebAuthn) ──
+function canBio() {
+  return !!(window.PublicKeyCredential &&
+    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable);
+}
+
+async function bioAvailable() {
+  if (!canBio()) return false;
+  return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+}
+
+function b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function fromB64url(s) {
+  return Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
+}
+
+async function registerBio() {
+  const uid = crypto.getRandomValues(new Uint8Array(16));
+  try {
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: uid,
+      rp: { id: RP_ID, name: RP_NAME },
+      user: { id: uid, name: 'luis', displayName: 'Luis — ARGon' },
+      pubKeyCredParams: [{ type:'public-key', alg:-7 }, { type:'public-key', alg:-257 }],
+      authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required' },
+      timeout: 60000,
+    }});
+    localStorage.setItem(CRED_KEY, b64url(cred.rawId));
+    document.getElementById('bio-setup-card').style.display = 'none';
+    showBioButton();
+    toast('🔐 Biométrico activado');
+  } catch(e) {
+    toast('No se pudo activar el biométrico');
+  }
+}
+
+async function loginBio() {
+  const credId = localStorage.getItem(CRED_KEY);
+  if (!credId) return;
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  try {
+    await navigator.credentials.get({ publicKey: {
+      challenge,
+      rpId: RP_ID,
+      allowCredentials: [{ type:'public-key', id:fromB64url(credId) }],
+      userVerification: 'required',
+      timeout: 60000,
+    }});
+    enterApp();
+  } catch(e) {
+    toast('Biométrico cancelado');
+  }
+}
+
+function showBioButton() {
+  const has = !!localStorage.getItem(CRED_KEY);
+  document.getElementById('btn-bio').style.display      = has ? 'flex' : 'none';
+  document.getElementById('bio-divider').style.display  = has ? 'flex' : 'none';
+}
+
+// ── LOGIN ──
+function enterApp() {
+  show('screen-app');
+  document.getElementById('fab-update').style.display = 'flex';
+  if (clientes.length === 0) loadData();
+  bioAvailable().then(ok => {
+    if (ok && !localStorage.getItem(CRED_KEY)) {
+      document.getElementById('bio-setup-card').style.display = 'flex';
+    }
+  });
+}
+
+function tryLogin() {
+  const val = document.getElementById('pwd').value;
+  if (val === PWD) {
+    document.getElementById('pwd-error').classList.remove('show');
+    enterApp();
+  } else {
+    document.getElementById('pwd-error').classList.add('show');
+    const inp = document.getElementById('pwd');
+    inp.classList.add('shake');
+    setTimeout(() => inp.classList.remove('shake'), 400);
+  }
+}
+
+// ── DETECCIÓN DE RED LOCAL ──
+function isLocal() {
+  const h = location.hostname;
+  return h === '127.0.0.1' || h === 'localhost' ||
+         h.startsWith('192.168.') || h.startsWith('10.') ||
+         h.startsWith('172.');
+}
+
+// ── ACCIONES DE ARCHIVOS ──
+const CLIENTES_BASE = 'C:\\Users\\Luis\\OneDrive\\Favoritos\\CLIENTES\\';
+
+const _cobData = {}; // key → { rutas, nombres, cliente, cobertura }
+
+async function verArchivo(rutaEnc) {
+  if (!isLocal()) {
+    toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000);
+    return;
+  }
+  const url = '/api/file?path=' + rutaEnc;
+  try {
+    const r = await fetch(url, { method: 'HEAD' });
+    if (r.ok) { window.open(url, '_blank'); }
+    else { toast('⚠ Archivo no encontrado en el servidor'); }
+  } catch(e) {
+    toast('⚠ El servidor no está corriendo — usá start-server.bat', 4000);
+  }
+}
+
+function compartirWACob(key) {
+  const d = _cobData[key];
+  if (!d) return;
+  const lista = d.nombres.map(n => `📄 ${tipoDesc(n)}`).join('\n');
+  const texto = `Hola! Te envío tu documentación de seguro 🛡️\n\n${lista}\n\nArgon Broker de Seguros\ninfo@argon.com.ar`;
+  window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(texto), '_blank');
+}
+
+function compartirMailCob(key) {
+  const d = _cobData[key];
+  if (!d) return;
+  const asunto = `Documentación ${d.cobertura} — ${d.cliente}`;
+  const lista  = d.nombres.map(n => `📄 ${tipoDesc(n)}`).join('\n');
+  const cuerpo = `Estimado/a ${d.cliente},\n\nAdjunto encontrará la documentación de su seguro (${d.cobertura}):\n\n${lista}\n\nQuedo a disposición ante cualquier consulta.\n\nSaludos,\nArgon Broker de Seguros\ninfo@argon.com.ar`;
+  let url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  d.rutas.forEach(ruta => {
+    url += `&attach=${CLIENTES_BASE}${ruta}`;
+  });
+  window.location.href = url;
+}
+
+// ── EVENTOS ──
+document.getElementById('btn-login').addEventListener('click', tryLogin);
+document.getElementById('pwd').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+document.getElementById('btn-bio').addEventListener('click', loginBio);
+
+// Ojo mostrar/ocultar contraseña
+document.getElementById('btn-eye').addEventListener('click', () => {
+  const inp = document.getElementById('pwd');
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  document.getElementById('eye-icon').innerHTML = isHidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+});
+
+// Olvidé mi contraseña
+document.getElementById('btn-forgot').addEventListener('click', () => {
+  toast('🔑 Tu contraseña es: argon2026', 5000);
+});
+document.getElementById('btn-activar-bio').addEventListener('click', registerBio);
+document.getElementById('btn-logout').addEventListener('click', () => {
+  show('screen-login');
+  document.getElementById('pwd').value = '';
+});
+async function doUpdate() {
+  const fab = document.getElementById('fab-update');
+  if (fab) fab.classList.add('spinning');
+  // 1. Desregistrar SW para forzar versión fresca del HTML en próxima carga
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+  }
+  // 2. Limpiar TODO el caché del navegador
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  // 3. Cargar datos frescos
+  await loadData();
+  // 4. Re-registrar SW limpio
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+document.getElementById('btn-update').addEventListener('click', doUpdate);
+document.getElementById('fab-update').addEventListener('click', doUpdate);
+
+const searchInput = document.getElementById('searchInput');
+const clearBtn    = document.getElementById('clearBtn');
+
+searchInput.addEventListener('input', () => {
+  query = normalizar(searchInput.value.trim());
+  clearBtn.classList.toggle('visible', query.length > 0);
+  renderResults();
+});
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  query = '';
+  clearBtn.classList.remove('visible');
+  renderResults();
+  searchInput.focus();
+});
+
+// ── INIT ──
+loadLogo();
+showBioButton();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
