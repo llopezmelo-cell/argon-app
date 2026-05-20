@@ -622,7 +622,7 @@ function renderCard(c) {
           <span class="tipo-badge ${tr}">${bl}</span>
           <span class="file-name">${nombre}</span>
           <div class="file-actions">
-            <button class="file-btn${canOpen ? '' : ' file-btn-remote'}" onclick="verArchivo('${rutaEnc}','${linkEnc}')" title="${canOpen ? 'Ver archivo' : 'Solo desde la PC'}">📄 Ver</button>${hasLink ? `
+            <button class="file-btn${canOpen ? '' : ' file-btn-remote'}" onclick="verArchivo('${rutaEnc}','${linkEnc}',this)" title="${canOpen ? 'Ver archivo' : 'Solo desde la PC'}">📄 Ver</button>${hasLink ? `
             <button class="file-btn wa" onclick="compartirArchivo(event,'${linkEnc}','${nomEsc}')" title="Enviar por WhatsApp / Mail">📤</button>` : ''}
           </div>
         </div>`;
@@ -797,11 +797,27 @@ function odDirectUrl(shareUrl) {
   return `https://api.onedrive.com/v1.0/shares/u!${b64}/root/content`;
 }
 
-async function verArchivo(rutaEnc, linkEnc) {
+async function verArchivo(rutaEnc, linkEnc, btn) {
   const link = linkEnc ? decodeURIComponent(linkEnc) : null;
   if (!isLocal()) {
-    if (link) { window.open(odDirectUrl(link), '_blank'); }
-    else { toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000); }
+    if (!link) { toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000); return; }
+    const directUrl = odDirectUrl(link);
+    // Intentar descargar como blob → abre en visor del navegador sin interceptar OneDrive app
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    try {
+      const resp = await fetch(directUrl, { mode: 'cors' });
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const ext  = link.includes('.pdf') || (blob.type === 'application/pdf') ? 'application/pdf' : blob.type;
+        const burl = URL.createObjectURL(new Blob([blob], { type: ext || 'application/octet-stream' }));
+        window.open(burl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(burl), 120000);
+        if (btn) { btn.textContent = '📄 Ver'; btn.disabled = false; }
+        return;
+      }
+    } catch(e) { /* CORS no soportado — abrir link directo */ }
+    if (btn) { btn.textContent = '📄 Ver'; btn.disabled = false; }
+    window.open(directUrl, '_blank');
     return;
   }
   const url = '/api/file?path=' + rutaEnc;
