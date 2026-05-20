@@ -273,6 +273,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .file-btn.mail:hover{background:var(--petrol);border-color:var(--petrol);color:#fff}
 .file-btn-remote{opacity:0.45;cursor:default}
 .file-btn-remote:hover{background:#fff!important;border-color:var(--border)!important;color:var(--petrol)!important}
+.share-popup{position:fixed;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-h);min-width:170px;overflow:hidden;display:flex;flex-direction:column}
+.share-popup a,.share-popup button{display:flex;align-items:center;gap:8px;padding:10px 16px;text-decoration:none;color:var(--text);font-size:13px;font-family:var(--font-body);border:none;background:none;cursor:pointer;text-align:left;white-space:nowrap}
+.share-popup a:hover,.share-popup button:hover{background:var(--bg2)}
 
 /* ===== BADGES VIGENCIA ===== */
 .badge-vigente{background:rgba(34,197,94,0.1);color:#16a34a;border:1px solid rgba(34,197,94,0.2);font-family:var(--font-head);font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;letter-spacing:0.5px;text-transform:uppercase}
@@ -607,14 +610,20 @@ function renderCard(c) {
       };
 
       const rows = archivosOrdenados.map(a => {
-        const nombre = highlight(a.nombre, query);
-        const tr = tipoReal(a.nombre);
-        const bl = badgeLabel(a.nombre);
+        const nombre  = highlight(a.nombre, query);
+        const tr      = tipoReal(a.nombre);
+        const bl      = badgeLabel(a.nombre);
+        const hasLink = !!a.link;
+        const canOpen = isLocal() || hasLink;
+        const rutaEnc = encodeURIComponent(a.ruta);
+        const linkEnc = hasLink ? encodeURIComponent(a.link) : '';
+        const nomEsc  = a.nombre.replace(/'/g,"&#39;").replace(/"/g,'&quot;');
         return `<div class="file-row">
           <span class="tipo-badge ${tr}">${bl}</span>
           <span class="file-name">${nombre}</span>
           <div class="file-actions">
-            <button class="file-btn${isLocal() ? '' : ' file-btn-remote'}" onclick="verArchivo('${encodeURIComponent(a.ruta)}')" title="${isLocal() ? 'Ver archivo' : 'Disponible solo en la PC'}">📄 Ver</button>
+            <button class="file-btn${canOpen ? '' : ' file-btn-remote'}" onclick="verArchivo('${rutaEnc}','${linkEnc}')" title="${canOpen ? 'Ver archivo' : 'Solo desde la PC'}">📄 Ver</button>${hasLink ? `
+            <button class="file-btn wa" onclick="compartirArchivo(event,'${linkEnc}','${nomEsc}')" title="Enviar por WhatsApp / Mail">📤</button>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -782,9 +791,11 @@ const CLIENTES_BASE = 'C:\\Users\\Luis\\OneDrive\\Favoritos\\CLIENTES\\';
 
 const _cobData = {}; // key → { rutas, nombres, cliente, cobertura }
 
-async function verArchivo(rutaEnc) {
+async function verArchivo(rutaEnc, linkEnc) {
+  const link = linkEnc ? decodeURIComponent(linkEnc) : null;
   if (!isLocal()) {
-    toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000);
+    if (link) { window.open(link, '_blank'); }
+    else { toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000); }
     return;
   }
   const url = '/api/file?path=' + rutaEnc;
@@ -795,6 +806,50 @@ async function verArchivo(rutaEnc) {
   } catch(e) {
     toast('⚠ El servidor no está corriendo — usá start-server.bat', 4000);
   }
+}
+
+async function compartirArchivo(evt, linkEnc, nombre) {
+  evt.stopPropagation();
+  const viewUrl = decodeURIComponent(linkEnc);
+  const btn = evt.currentTarget || evt.target;
+
+  // Cerrar popup previo si existe
+  document.querySelector('.share-popup')?.remove();
+
+  // Mobile (Android/iOS): usa el menú nativo del sistema — WhatsApp aparece directo
+  if (navigator.share) {
+    try { await navigator.share({ title: nombre, url: viewUrl }); } catch(e) { /* cancelado */ }
+    return;
+  }
+
+  // Desktop: mostrar mini menú con opciones
+  const waText  = encodeURIComponent('📄 ' + nombre + '\n' + viewUrl);
+  const mailSubj = encodeURIComponent(nombre);
+  const mailBody = encodeURIComponent(viewUrl);
+
+  const popup = document.createElement('div');
+  popup.className = 'share-popup';
+  popup.innerHTML =
+    `<a href="https://web.whatsapp.com/send?text=${waText}" target="_blank">💬 WhatsApp</a>` +
+    `<a href="mailto:?subject=${mailSubj}&body=${mailBody}">✉️ Email</a>` +
+    `<button id="_cplink">🔗 Copiar link</button>`;
+
+  const rect = btn.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 6) + 'px';
+  popup.style.right = (window.innerWidth - rect.right) + 'px';
+  document.body.appendChild(popup);
+
+  popup.querySelector('#_cplink').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(viewUrl); } catch(e) {}
+    toast('🔗 Link copiado', 2000);
+    popup.remove();
+  });
+
+  // Cerrar al hacer clic fuera
+  setTimeout(() => {
+    const close = e => { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', close); } };
+    document.addEventListener('click', close);
+  }, 100);
 }
 
 function compartirWACob(key) {
