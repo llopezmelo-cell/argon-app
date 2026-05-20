@@ -822,17 +822,15 @@ async function compartirArchivo(evt, linkEnc, nombre) {
     return;
   }
 
-  // Desktop: mostrar mini menú con opciones
-  const waText  = encodeURIComponent('📄 ' + nombre + '\n' + viewUrl);
+  // Desktop: copiar link + opciones mail
   const mailSubj = encodeURIComponent(nombre);
   const mailBody = encodeURIComponent(viewUrl);
 
   const popup = document.createElement('div');
   popup.className = 'share-popup';
   popup.innerHTML =
-    `<a href="https://web.whatsapp.com/send?text=${waText}" target="_blank">💬 WhatsApp</a>` +
-    `<a href="mailto:?subject=${mailSubj}&body=${mailBody}">✉️ Email</a>` +
-    `<button id="_cplink">🔗 Copiar link</button>`;
+    `<button id="_cplink">🔗 Copiar link (para WhatsApp)</button>` +
+    `<a href="mailto:?subject=${mailSubj}&body=${mailBody}">✉️ Enviar por Email</a>`;
 
   const rect = btn.getBoundingClientRect();
   popup.style.top  = (rect.bottom + 6) + 'px';
@@ -841,7 +839,7 @@ async function compartirArchivo(evt, linkEnc, nombre) {
 
   popup.querySelector('#_cplink').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(viewUrl); } catch(e) {}
-    toast('🔗 Link copiado', 2000);
+    toast('🔗 Link copiado — pegalo en WhatsApp o donde quieras', 3000);
     popup.remove();
   });
 
