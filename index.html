@@ -791,10 +791,16 @@ const CLIENTES_BASE = 'C:\\Users\\Luis\\OneDrive\\Favoritos\\CLIENTES\\';
 
 const _cobData = {}; // key → { rutas, nombres, cliente, cobertura }
 
+// Convierte link de OneDrive (visor) en URL de contenido directo — abre el PDF sin mostrar OneDrive
+function odDirectUrl(shareUrl) {
+  const b64 = btoa(shareUrl).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+  return `https://api.onedrive.com/v1.0/shares/u!${b64}/root/content`;
+}
+
 async function verArchivo(rutaEnc, linkEnc) {
   const link = linkEnc ? decodeURIComponent(linkEnc) : null;
   if (!isLocal()) {
-    if (link) { window.open(link, '_blank'); }
+    if (link) { window.open(odDirectUrl(link), '_blank'); }
     else { toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000); }
     return;
   }
@@ -810,7 +816,8 @@ async function verArchivo(rutaEnc, linkEnc) {
 
 async function compartirArchivo(evt, linkEnc, nombre) {
   evt.stopPropagation();
-  const viewUrl = decodeURIComponent(linkEnc);
+  const viewUrl  = decodeURIComponent(linkEnc);
+  const directUrl = odDirectUrl(viewUrl);   // URL de contenido directo — abre solo el PDF
   const btn = evt.currentTarget || evt.target;
 
   // Cerrar popup previo si existe
@@ -818,13 +825,13 @@ async function compartirArchivo(evt, linkEnc, nombre) {
 
   // Mobile (Android/iOS): usa el menú nativo del sistema — WhatsApp aparece directo
   if (navigator.share) {
-    try { await navigator.share({ title: nombre, url: viewUrl }); } catch(e) { /* cancelado */ }
+    try { await navigator.share({ title: nombre, url: directUrl }); } catch(e) { /* cancelado */ }
     return;
   }
 
   // Desktop: copiar link + opciones mail
   const mailSubj = encodeURIComponent(nombre);
-  const mailBody = encodeURIComponent(viewUrl);
+  const mailBody = encodeURIComponent(directUrl);
 
   const popup = document.createElement('div');
   popup.className = 'share-popup';
@@ -838,7 +845,7 @@ async function compartirArchivo(evt, linkEnc, nombre) {
   document.body.appendChild(popup);
 
   popup.querySelector('#_cplink').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(viewUrl); } catch(e) {}
+    try { await navigator.clipboard.writeText(directUrl); } catch(e) {}
     toast('🔗 Link copiado — pegalo en WhatsApp o donde quieras', 3000);
     popup.remove();
   });
