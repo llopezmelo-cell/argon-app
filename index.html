@@ -570,16 +570,8 @@ function renderCard(c) {
   // 1. Filtrar por tipo de documento
   let archivos = (c.archivos || []).filter(a => esVisible(a.nombre));
 
-  // 2. Solo 2025 y 2026
+  // 2. Solo años vigentes (2025 y 2026) — se muestran todos los años disponibles
   archivos = archivos.filter(a => ANIOS_VALIDOS.includes(a.anio));
-
-  // 3. Por cobertura, quedarse con el año más reciente disponible
-  const maxAnio = {};
-  archivos.forEach(a => {
-    const cob = a.cobertura || 'General';
-    if (!maxAnio[cob] || a.anio > maxAnio[cob]) maxAnio[cob] = a.anio;
-  });
-  archivos = archivos.filter(a => a.anio === maxAnio[a.cobertura || 'General']);
 
   const anioHoy  = String(new Date().getFullYear());
 
