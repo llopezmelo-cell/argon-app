@@ -389,6 +389,15 @@ mark{background:rgba(75,191,214,0.15);color:var(--petrol);border-radius:2px;padd
 </div>
 
 <div id="toast"></div>
+
+<!-- Modal visor de archivos -->
+<div id="pdf-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:#000;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#1A5C78;color:#fff;flex-shrink:0">
+    <span id="pdf-modal-title" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 40px)"></span>
+    <button onclick="cerrarPdf()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+  </div>
+  <iframe id="pdf-iframe" style="flex:1;width:100%;border:none" allowfullscreen></iframe>
+</div>
 <!-- Botón flotante de actualización (siempre visible) -->
 <button id="fab-update" title="Actualizar datos">↻</button>
 
@@ -797,27 +806,23 @@ function odDirectUrl(shareUrl) {
   return `https://api.onedrive.com/v1.0/shares/u!${b64}/root/content`;
 }
 
+function cerrarPdf() {
+  const m = document.getElementById('pdf-modal');
+  m.style.display = 'none';
+  document.getElementById('pdf-iframe').src = '';
+}
+
 async function verArchivo(rutaEnc, linkEnc, btn) {
   const link = linkEnc ? decodeURIComponent(linkEnc) : null;
   if (!isLocal()) {
     if (!link) { toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000); return; }
-    const directUrl = odDirectUrl(link);
-    // Intentar descargar como blob → abre en visor del navegador sin interceptar OneDrive app
-    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-    try {
-      const resp = await fetch(directUrl, { mode: 'cors' });
-      if (resp.ok) {
-        const blob = await resp.blob();
-        const ext  = link.includes('.pdf') || (blob.type === 'application/pdf') ? 'application/pdf' : blob.type;
-        const burl = URL.createObjectURL(new Blob([blob], { type: ext || 'application/octet-stream' }));
-        window.open(burl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(burl), 120000);
-        if (btn) { btn.textContent = '📄 Ver'; btn.disabled = false; }
-        return;
-      }
-    } catch(e) { /* CORS no soportado — abrir link directo */ }
-    if (btn) { btn.textContent = '📄 Ver'; btn.disabled = false; }
-    window.open(directUrl, '_blank');
+    // Mostrar en modal interno con URL de contenido directo
+    // Los iframes no disparan el intent de OneDrive app en Android
+    const nombre = decodeURIComponent(rutaEnc).split('\\').pop();
+    document.getElementById('pdf-modal-title').textContent = nombre;
+    document.getElementById('pdf-iframe').src = odDirectUrl(link);
+    const m = document.getElementById('pdf-modal');
+    m.style.display = 'flex';
     return;
   }
   const url = '/api/file?path=' + rutaEnc;
@@ -841,7 +846,7 @@ async function compartirArchivo(evt, linkEnc, nombre) {
 
   // Mobile (Android/iOS): usa el menú nativo del sistema — WhatsApp aparece directo
   if (navigator.share) {
-    try { await navigator.share({ title: nombre, url: directUrl }); } catch(e) { /* cancelado */ }
+    try { await navigator.share({ title: nombre, url: viewUrl }); } catch(e) { /* cancelado */ }
     return;
   }
 
