@@ -816,13 +816,7 @@ async function verArchivo(rutaEnc, linkEnc, btn) {
   const link = linkEnc ? decodeURIComponent(linkEnc) : null;
   if (!isLocal()) {
     if (!link) { toast('📂 Los archivos solo se abren desde la PC con la app corriendo', 4000); return; }
-    // Mostrar en modal interno con URL de contenido directo
-    // Los iframes no disparan el intent de OneDrive app en Android
-    const nombre = decodeURIComponent(rutaEnc).split('\\').pop();
-    document.getElementById('pdf-modal-title').textContent = nombre;
-    document.getElementById('pdf-iframe').src = odDirectUrl(link);
-    const m = document.getElementById('pdf-modal');
-    m.style.display = 'flex';
+    window.open(link, '_blank');
     return;
   }
   const url = '/api/file?path=' + rutaEnc;
