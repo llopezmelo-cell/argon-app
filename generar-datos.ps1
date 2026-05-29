@@ -7,7 +7,7 @@ $OUTPUT_PATH   = Join-Path $PSScriptRoot "datos.json"
 
 $ANIOS_VIGENTES = @("2025", "2026")
 
-$KW_POLIZA  = @("poliza","pza","cert","certif","circulaci","circ ","mercosur","conosur","credencial","chequera")
+$KW_POLIZA  = @("poliza","pza","cert","certif","circulaci","circ ","mercosur","conosur","credencial","chequera","endoso")
 $KW_FACTURA = @("factura","fc ","fc-","recibo","lw-recibo","cuota","vep","pago")
 $KW_EXCLUIR = @(".lnk","dni ","domicilio","constancia afip","constancia suss","poder ","denuncia","foto ","presupuesto","baja ")
 
@@ -102,12 +102,45 @@ foreach ($carpeta in $carpetas) {
 
     if ($archivosCliente.Count -eq 0) { continue }
     $conVigentes++
-    $clientes += [ordered]@{
-        id       = $carpeta.Name
-        nombre   = (Format-Nombre $carpeta.Name)
-        vigente  = $true
-        archivos = $archivosCliente
+
+    # Leer .metadata.json si existe (generado por los agentes descargadores)
+    $metadataFile = Join-Path $carpeta.FullName ".metadata.json"
+    $cuotaImpaga    = $false
+    $fechaNacimiento = $null
+    $polizasMeta     = @()
+    if (Test-Path $metadataFile) {
+        try {
+            $meta = Get-Content $metadataFile -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($meta.fechaNacimiento) { $fechaNacimiento = $meta.fechaNacimiento }
+            if ($meta.polizas) {
+                foreach ($prop in $meta.polizas.PSObject.Properties) {
+                    $p = $prop.Value
+                    if ($p.pagada -eq $false) { $cuotaImpaga = $true }
+                    $polizasMeta += [ordered]@{
+                        nro          = $prop.Name
+                        compania     = $p.compania
+                        ramo         = $p.ramo
+                        vigHasta     = $p.vigHasta
+                        pagada       = if ($null -ne $p.pagada) { $p.pagada } else { $true }
+                        proximaCuota = $p.proximaCuota
+                        montoCuota   = $p.montoCuota
+                    }
+                }
+            }
+        } catch {}
     }
+
+    $clienteObj = [ordered]@{
+        id               = $carpeta.Name
+        nombre           = (Format-Nombre $carpeta.Name)
+        vigente          = $true
+        archivos         = $archivosCliente
+    }
+    if ($null -ne $fechaNacimiento) { $clienteObj.fechaNacimiento = $fechaNacimiento }
+    if ($cuotaImpaga)               { $clienteObj.cuotaImpaga     = $true }
+    if ($polizasMeta.Count -gt 0)   { $clienteObj.polizas         = $polizasMeta }
+
+    $clientes += $clienteObj
 
     if ($total % 100 -eq 0) { Write-Host "  $total carpetas procesadas..." }
 }
